@@ -124,7 +124,150 @@ def main(options=None):
     )
 
     # modify subcommand
-    ## TODO: Add modify subcommand parser
+    parser_modify = subparsers.add_parser(
+        'modify',
+        help='Change a configured repository.'
+    )
+    parser_modify.add_argument(
+        'repository',
+        nargs='*',
+        default='system',
+        help='The repository to modify. Default is the system repository.'
+    )
+
+    modify_enable = parser_modify.add_mutually_exclusive_group(
+        required=False
+    )
+    modify_enable.add_argument(
+        '-e',
+        '--enable',
+        action='store_true',
+        help='Enable the repository, if disabled.'
+    )
+    modify_enable.add_argument(
+        '-d',
+        '--disable',
+        action='store_true',
+        help=(
+            'Disable the repository, if enabled. The system repository cannot '
+            'be disabled.'
+        )
+    )
+
+    # Suites
+    modify_suites = parser_modify.add_mutually_exclusive_group(required=False)
+    modify_suites_add_remove = modify_suites.add_argument_group()
+    modify_suites_add_remove.add_argument(
+        '--add-suite',
+        metavar='SUITE[,SUITE]',
+        help=(
+            'Add the specified suite(s) to the repository. Multiple '
+            'repositories should be separated with commas. NOTE: Legacy deb '
+            'repositories may only contain one suite.'
+        )
+    )
+    modify_suites_add_remove.add_argument(
+        '--remove-suite',
+        metavar='SUITE[,SUITE]',
+        help=(
+            'Remove the specified suite(s) from the repository. Multiple '
+            'repositories should be separated with commas. NOTE: The last '
+            'suite in a repository cannot be removed.'
+        )
+    )
+    modify_suites.add_argument(
+        '--suite',
+        metavar='SUITE[,SUITE]',
+        help=(
+            'Set the suites for the repository to SUITE(s). NOTE: Legacy deb '
+            'repositories may only contain one suite'
+        )
+    )
+
+    # Components
+    modify_components = parser_modify.add_mutually_exclusive_group(required=False)
+    modify_components_add_remove = modify_components.add_argument_group()
+    modify_components_add_remove.add_argument(
+        '--add-component',
+        metavar='COMPONENT[,COMPONENT]',
+        help=(
+            'Add the specified component(s) to the repository. Multiple '
+            'repositories should be separated with commas.'
+        )
+    )
+    modify_components_add_remove.add_argument(
+        '--remove-component',
+        metavar='COMPONENT[,COMPONENT]',
+        help=(
+            'Remove the specified component(s) from the repository. Multiple '
+            'repositories should be separated with commas. NOTE: The last '
+            'component in a repository cannot be removed.'
+        )
+    )
+    modify_components.add_argument(
+        '--component',
+        metavar='COMPONENT[,COMPONENT]',
+        help='Set the components for the repository to COMPONENT(s).'
+    )
+
+    # URIs
+    modify_uris = parser_modify.add_mutually_exclusive_group(required=False)
+    modify_uris_add_remove = modify_uris.add_argument_group()
+    modify_uris_add_remove.add_argument(
+        '--add-uri',
+        metavar='URI[,URI]',
+        help=(
+            'Add the specified URI(s) to the repository. Multiple '
+            'repositories should be separated with commas. NOTE: Legacy deb '
+            'repositories may only contain one uri.'
+        )
+    )
+    modify_uris_add_remove.add_argument(
+        '--remove-uri',
+        metavar='URI[,URI]',
+        help=(
+            'Remove the specified URI(s) from the repository. Multiple '
+            'repositories should be separated with commas. NOTE: The last '
+            'uri in a repository cannot be removed.'
+        )
+    )
+    modify_uris.add_argument(
+        '--uri',
+        metavar='URI[,URI]',
+        help=(
+            'Set the URIs for the repository to URI(s). NOTE: Legacy deb '
+            'repositories may only contain one URI'
+        )
+    )
+
+    # Options
+    modify_options = parser_modify.add_mutually_exclusive_group(required=False)
+    modify_options_add_remove = modify_options.add_argument_group()
+    modify_options_add_remove.add_argument(
+        '--add-option',
+        metavar='OPTION=VALUE[,OPTION=VALUE]',
+        help=(
+            'Add the specified option(s) and value(s) to the repository. '
+            'Multiple option-value pairs should be separated with commas.'
+        )
+    )
+    modify_options_add_remove.add_argument(
+        '--remove-option',
+        metavar='OPTION=VALUE[,OPTION=VALUE]',
+        help=(
+            'Remove the specified option(s) and value(s) from the repository. '
+            'Multiple option-value pairs should be separated with commas.'
+        )
+    )
+    modify_options.add_argument(
+        '--option',
+        metavar='OPTION=VALUE[,OPTION=VALUE]',
+        help=(
+            'Set the specified option(s) and value(s) as the options for the '
+            'repository. Multiple pairs should be separated with commas.'
+        )
+    )
+
 
     # list subcommand
     parser_list = subparsers.add_parser(
@@ -220,14 +363,14 @@ def main(options=None):
     #     log.error('You need to root, or use sudo.')
     #     exit(176)
     
-    action = {
-        'source': source,
-        'add': add,
-        'list': listall,
-        'repo': repo,
-        'convert': convert
-    }
-    action[args.action](log, args)
+    # action = {
+    #     'source': source,
+    #     'add': add,
+    #     'list': listall,
+    #     'repo': repo,
+    #     'convert': convert
+    # }
+    # action[args.action](log, args)
 
 if __name__ == '__main__':
     try:
