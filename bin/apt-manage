@@ -71,11 +71,10 @@ def main(options=None):
     )
 
     parser.add_argument(
-        '-v',
-        '--verbose',
+        '-b',
+        '--debug',
         action='count',
-        dest='verbosity',
-        help='Make output more verbose'
+        help=argparse.SUPPRESS
     )
 
     subparsers = parser.add_subparsers(
@@ -155,9 +154,7 @@ def main(options=None):
     )
 
     # Suites
-    modify_suites = parser_modify.add_mutually_exclusive_group(required=False)
-    modify_suites_add_remove = modify_suites.add_argument_group()
-    modify_suites_add_remove.add_argument(
+    parser_modify.add_argument(
         '--add-suite',
         metavar='SUITE[,SUITE]',
         help=(
@@ -166,7 +163,7 @@ def main(options=None):
             'repositories may only contain one suite.'
         )
     )
-    modify_suites_add_remove.add_argument(
+    parser_modify.add_argument(
         '--remove-suite',
         metavar='SUITE[,SUITE]',
         help=(
@@ -175,19 +172,9 @@ def main(options=None):
             'suite in a repository cannot be removed.'
         )
     )
-    modify_suites.add_argument(
-        '--suite',
-        metavar='SUITE[,SUITE]',
-        help=(
-            'Set the suites for the repository to SUITE(s). NOTE: Legacy deb '
-            'repositories may only contain one suite'
-        )
-    )
 
     # Components
-    modify_components = parser_modify.add_mutually_exclusive_group(required=False)
-    modify_components_add_remove = modify_components.add_argument_group()
-    modify_components_add_remove.add_argument(
+    parser_modify.add_argument(
         '--add-component',
         metavar='COMPONENT[,COMPONENT]',
         help=(
@@ -195,7 +182,7 @@ def main(options=None):
             'repositories should be separated with commas.'
         )
     )
-    modify_components_add_remove.add_argument(
+    parser_modify.add_argument(
         '--remove-component',
         metavar='COMPONENT[,COMPONENT]',
         help=(
@@ -204,16 +191,9 @@ def main(options=None):
             'component in a repository cannot be removed.'
         )
     )
-    modify_components.add_argument(
-        '--component',
-        metavar='COMPONENT[,COMPONENT]',
-        help='Set the components for the repository to COMPONENT(s).'
-    )
 
     # URIs
-    modify_uris = parser_modify.add_mutually_exclusive_group(required=False)
-    modify_uris_add_remove = modify_uris.add_argument_group()
-    modify_uris_add_remove.add_argument(
+    parser_modify.add_argument(
         '--add-uri',
         metavar='URI[,URI]',
         help=(
@@ -222,7 +202,7 @@ def main(options=None):
             'repositories may only contain one uri.'
         )
     )
-    modify_uris_add_remove.add_argument(
+    parser_modify.add_argument(
         '--remove-uri',
         metavar='URI[,URI]',
         help=(
@@ -231,19 +211,9 @@ def main(options=None):
             'uri in a repository cannot be removed.'
         )
     )
-    modify_uris.add_argument(
-        '--uri',
-        metavar='URI[,URI]',
-        help=(
-            'Set the URIs for the repository to URI(s). NOTE: Legacy deb '
-            'repositories may only contain one URI'
-        )
-    )
 
     # Options
-    modify_options = parser_modify.add_mutually_exclusive_group(required=False)
-    modify_options_add_remove = modify_options.add_argument_group()
-    modify_options_add_remove.add_argument(
+    parser_modify.add_argument(
         '--add-option',
         metavar='OPTION=VALUE[,OPTION=VALUE]',
         help=(
@@ -251,20 +221,12 @@ def main(options=None):
             'Multiple option-value pairs should be separated with commas.'
         )
     )
-    modify_options_add_remove.add_argument(
+    parser_modify.add_argument(
         '--remove-option',
         metavar='OPTION=VALUE[,OPTION=VALUE]',
         help=(
             'Remove the specified option(s) and value(s) from the repository. '
             'Multiple option-value pairs should be separated with commas.'
-        )
-    )
-    modify_options.add_argument(
-        '--option',
-        metavar='OPTION=VALUE[,OPTION=VALUE]',
-        help=(
-            'Set the specified option(s) and value(s) as the options for the '
-            'repository. Multiple pairs should be separated with commas.'
         )
     )
 
@@ -329,11 +291,11 @@ def main(options=None):
     if options:
         args = parser.parse_args(options)
     
-    if not args.verbosity:
-        args.verbosity = 0
+    if not args.debug:
+        args.debug = 0
 
-    if args.verbosity > 2:
-        args.verbosity = 2
+    if args.debug > 2:
+        args.debug = 2
     
     verbosity = {
         0 : logging.WARN,
@@ -346,15 +308,13 @@ def main(options=None):
     formatter = logging.Formatter('%(name)s: %(levelname)s: %(message)s')
     handler.setFormatter(formatter)
     log.addHandler(handler)
-    log.setLevel(verbosity[args.verbosity])
+    log.setLevel(verbosity[args.debug])
     log.debug('Logging set up!')
 
     log.debug('Arguments passed: %s' %str(args))
     
     if not args.action:
         args.action = 'list'
-    
-    
     
     log.debug('Got command: %s', args.action)
 

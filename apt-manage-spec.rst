@@ -61,16 +61,12 @@ following options::
     --disable, -d
     --add-suite
     --remove-suite
-    --suite
     --add-component
     --remove-component
-    --component
     --add-uri
     --remove-uri
-    --uri
     --add-option
     --remove-option
-    --option
 
 --enable
 ^^^^^^^^
@@ -96,13 +92,6 @@ The --remove-suite option attempts to remove the specified suite or suites from
 the source. If a given suite is not added to the source, it is ignored. The last
 configured suite on a source cannot be removed.
 
---suite
-^^^^^^^
-
-The --suite option attempts to set the suites for the source to the specified
-value or values. It is the same as removing all configured suites and re-adding
-the specified suites. Note that legacy deb sources cannot have multiple suites.
-
 --add-component
 ^^^^^^^^^^^^^^^
 
@@ -116,13 +105,6 @@ ignored.
 The --remove-component option attempts to remove the specified component or 
 components from the source. If a given component is not added to the source, it
 is ignored. The last configured component on a source cannot be removed.
-
---component
-^^^^^^^^^^^
-
-The --component option attempts to set the components for the source to the 
-specified value or values. It is the same as removing all configured components
-and re-adding the specified components.
 
 --add-uri
 ^^^^^^^^^
@@ -138,13 +120,6 @@ The --remove-uri option attempts to remove the specified URI or URIs from the
 source. If a given URI is not added to the source, it is ignored. The last 
 configured URI on a source cannot be removed.
 
---uri
-^^^^^
-
-The --uri option attempts to set the configured URIs on the source to the 
-specified value or values. Note that a legacy deb source cannot have multiple
-URIs configured.
-
 --add-option
 ^^^^^^^^^^^^
 The --add-option option attempts to add the given option or options as well as 
@@ -156,13 +131,6 @@ ignored.
 
 The --remove-option option attempts to remove the given option or options from
 the source. If a given option isn't added to the source, it is ignored.
-
---option
-^^^^^^^^
-
-the --option option attempts to set the options for the source to the given
-option or options as well as values. It is the same as removing all options
-from the source and then adding the specified options. 
 
 list
 ----
