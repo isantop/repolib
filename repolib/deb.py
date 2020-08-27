@@ -58,14 +58,6 @@ class DebLine(source.Source):
     
     def __init__(self, line):
         super().__init__()
-        # Clean up deb line by making spaces consistent 
-        self.name = ''
-        self.enabled = util.AptSourceEnabled.TRUE
-        self.types = []
-        self.uris = []
-        self.suites = []
-        self.components = []
-        self.options = {}
         
         self.deb_line = line
         if 'cdrom:' in self.deb_line:
@@ -132,23 +124,31 @@ class DebLine(source.Source):
 
     def _parse_debline(self, line):
         # Enabled vs. Disabled
+        self.enabled = True
         if line.startswith('#'):
-            self.set_enabled(False)
+            self.enabled = False
             line = line.replace('#', '', 1)
             line = line.strip()
-        
+
         # URI parsing
         for uri in uri_re.finditer(line):
             self.uris = [uri[0]]
             line_uri = line.replace(uri[0], '')
         
+        print(line_uri)
+        
         # Options parsing
+        ## TODO: FIx this
         try:
             options = options_re.search(line_uri).group()
-            self._set_options(options.strip())
+            opts = self._set_options(options.strip())
+            print(opts)
+            self.options = opts.copy()
             line_uri = line_uri.replace(options, '')
         except AttributeError:
             pass
+        
+        print(line_uri)
         
         deb_list = line_uri.split()
         
@@ -161,18 +161,20 @@ class DebLine(source.Source):
         self.suites = [deb_list[1]]
 
         # Components parsing
+        comps = []
         for item in deb_list[2:]:
             if not item.startswith('#'):
-                self.components.append(item)
+                comps.append(item)
             else:
                 break
+        self.components = comps
     
     def _validate(self, valid):
         """
         Ensure we have a valid debian repository line.
         """
         if valid.startswith('#'):
-            self.set_enabled(False)
+            self.enabled = False
             valid = valid.replace('#', '')
         valid = valid.strip()
         if not valid.startswith('deb'):
@@ -183,7 +185,7 @@ class DebLine(source.Source):
     def _get_options(self):
         opt_str = ''
         for key in self.options:
-            opt_str += '{key}={values} '.format(key=self.outoptions_d[key], values=','.join(self.options[key]))
+            opt_str += f'{self.outoptions_d[key]}={self.options[key].replace(" ", ",")} '
         return opt_str
 
     def _set_type(self, deb_type):
@@ -208,11 +210,14 @@ class DebLine(source.Source):
         
         options = options.replace('=', ',')
         options_list = options.split()
+
+        options_output = {}
         
         for i in options_list:
             option = i.split(',')
             values_list = []
             for value in option[1:]:
                 values_list.append(value)
-            self.options[option[0]] = values_list
+            options_output[option[0]] = ' '.join(values_list)
+        return options_output
             

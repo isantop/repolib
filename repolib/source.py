@@ -27,13 +27,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
+from debian import deb822
 
 from . import util
 
-class PPAError(Exception):
+class SourceError(Exception):
     pass
 
-class Source():
+class Source(deb822.Deb822):
+    """ A Deb822 object representing a software source.
+
+    Provides a dict-like interface for accessing and modifying DEB822-format
+    sources, as well as options for loading and saving them from disk.
+    """
 
     options_d = {
         'arch': 'Architectures',
@@ -43,133 +49,181 @@ class Source():
         'by-hash': 'By-Hash'
     }
 
-    def __init__(self,
-                 name='', enabled=True, types=[],
-                 uris=[], suites=[], components=[], options={}, 
-                 filename='example.source'):
-        """
-        Constructor for the Source class.
 
-        Keyword Arguments:
-          enabled -- Whether the source is enabled or disabled (default: True)
-          types -- List of debian source repository types 
-          uris -- List of URIs the source uses 
-          suites -- List of suites for the source (e.g. disco) 
-          components -- List of source components (e.g. main) 
-          options -- Dict of options for the source. 
-          filename -- The filename of the source file on disk (default: example.source)
-        """
-        self.name = name
-        self.set_enabled(enabled)
-        self.types = []
-        for type in types:
-            self.types.append(util.AptSourceType(type.strip()))
-        self.uris = uris
-        self.suites = suites
-        self.components = components
-        self.options = options
+    def __init__(self, filename=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.filename = filename
-    
-    def load_from_file(self, filename=None):
-        """
-        Loads the source from a file on disk.
 
-        Keyword arguments:
-          filename -- STR, Containing the path to the file. (default: self.filename)
+    def load_from_file(self, filename=None):
+        """ Loads the data from a file path.
+
+        Arguments:
+            filename (str): The name of the file on disk.
         """
         if filename:
             self.filename = filename
-        self.enabled = util.AptSourceEnabled.TRUE
-        self.types = []
-        self.uris = []
-        self.suites = []
-        self.components = []
-        self.options = {}
+        if not self.filename:
+            raise SourceError("No filename to load from")
 
-        full_path = os.path.join(util.sources_dir, self.filename)
+        full_path = util.sources_dir / filename
         
-        with open(full_path, 'r') as source_file:
-            for line in source_file:
-                line = line.strip()
-                if line.startswith('X-Repolib-Name:'):
-                    self.name = " ".join(line.split()[1:])
-                elif line.startswith('Enabled:'):
-                    self.enabled=util.AptSourceEnabled(line.split(":")[1].strip().lower())
-                elif line.startswith('Types:'):
-                    types = line.split(' ')
-                    for type in types[1:]:
-                        self.types.append(util.AptSourceType(type.strip()))
-                elif line.startswith('URIs'):
-                    uris = line.split(' ')
-                    for uri in uris[1:]:
-                        self.uris.append(uri.strip())
-                elif line.startswith('Suites:'):
-                    suites = line.split(' ')
-                    for suite in suites[1:]:
-                        self.suites.append(suite.strip())
-                elif line.startswith('Components:'):
-                    components = line.split(' ')
-                    for component in components[1:]:
-                        self.components.append(component.strip())
-                elif line == "":
-                    continue
-                else:
-                    option = line.replace(':', '').strip().split(' ')
-                    self.options[option[0]] = option[1:]
-    
-    def save_to_disk(self):
-        """ Saves the source to disk at self.filename location."""
-        string_source = self.make_source_string()
-        string_source = string_source.replace('Name: ', 'X-Repolib-Name: ')
-        full_path = os.path.join(util.sources_dir, self.filename)
+        with open(full_path, mode='r') as source_file:
+            super().__init__(source_file)
 
-        with open(full_path, 'w') as source_file:
-            source_file.write(string_source)
-            
+    def save_to_disk(self):
+        """ Saves the source to disk."""
+        if not self.filename:
+            raise SourceError('No filename to save to specified')
+        full_path = util.sources_dir / self.filename
+
+        with open(full_path, mode='w') as sources_file:
+            sources_file.write(self.dump())
+    
     def make_source_string(self):
-        """Makes a string of the source."""
-        if self.name == '':
+        """ Makes a printable string of the source. 
+
+        This method is intended to provide output in a user-friendly format. For
+        output representative of the actual data, use dump() instead.
+        
+        Returns:
+            A str which can be printed to console.
+        """
+        if not self.name:
             self.name = self.filename.replace('.sources', '')
-            
-        toprint  = "Name: {}\n".format(self.name)
-        toprint += "Enabled: {}\n".format(self.enabled.value) 
-        toprint += "Types: {}\n".format(" ".join(self._get_types())) 
-        toprint += "URIs: {}\n".format(" ".join(self.uris)) 
-        toprint += "Suites: {}\n".format(" ".join(self.suites)) 
-        toprint += "Components: {}\n".format(" ".join(self.components)) 
-        toprint += "{}".format(self._get_options())
+        
+        toprint = self.dump()
+        toprint = toprint.replace('X-Repolib-Name', 'Name')
         return toprint
     
-    def set_enabled(self, is_enabled):
-        """
-        Sets whether the source should be enabled or disabled.
+    def set_source_enabled(self, enabled):
+        """ Convenience method to set a source with source_code enabled.
 
-        Positional Arguments:
-          is_enabled -- BOOL, the desired state of the source
+        If source code is enabled, then the Types for self will be both 
+        BINARY and SOURCE. Otherwise it will be just BINARY.
+
+        Arguments:
+            enabled(bool): Wether or not to enable source-code.
         """
-        enable = {
-            True : util.AptSourceEnabled.TRUE,
-            False: util.AptSourceEnabled.FALSE
-        }
-        self.enabled = enable[is_enabled]
-    
-    def set_source_enabled(self, is_enabled):
-        if is_enabled:
-            self.types = [
-                util.AptSourceType.BINARY,
-                util.AptSourceType.SOURCE
-            ]
+        if enabled:
+            self.types = [util.AptSourceType.BINARY, util.AptSourceType.SOURCE]
         else:
             self.types = [util.AptSourceType.BINARY]
 
-    def _get_options(self):
-        opt_str = ''
-        for key in self.options:
-            opt_str += '{key}: {values}\n'.format(key=key, values=' '.join(self.options[key]))
-        return opt_str
+
+    @property
+    def name(self):
+        """ str: The name of the source."""
+        try:
+            return self['X-Repolib-Name']
+        except KeyError:
+            return None
     
-    def _get_types(self):
-        types_s = []
-        for i in self.types:
-            types_s.append(i.value)
-        return types_s
+    @name.setter
+    def name(self, name):
+        self['X-Repolib-Name'] = name
+    
+    @property
+    def enabled(self):
+        """ util.AptSourceEnabled: Whether the source is enabled or not. """
+        try:
+            return util.AptSourceEnabled(self['enabled'])
+        except KeyError:
+            return None
+    
+    @enabled.setter
+    def enabled(self, enable):
+        """ Accept a wide variety of data types/values for ease of use. """
+        if enable in [True, 'Yes', 'yes', 'YES', 'y', 'Y', 1]:
+            self['Enabled'] = util.AptSourceEnabled.TRUE.value
+        else:
+            self['Enabled'] = util.AptSourceEnabled.FALSE.value
+
+    @property
+    def types(self):
+        """ list of util.AptSourceTypes: The types of packages provided. """
+        try:
+            types = []
+            for dtype in self['Types'].split():
+                types.append(util.AptSourceType(dtype.strip()))
+            return types
+        except KeyError:
+            return None
+    
+    @types.setter
+    def types(self, types):
+        print(types)
+        output_types = []
+        for dtype in types:
+            output_types.append(dtype.value)
+        self['Types'] = ' '.join(output_types)
+    
+
+    @property
+    def uris(self):
+        """ [str]: The list of URIs providing packages. """
+        try:
+            return self['URIs'].split()
+        except KeyError:
+            return None
+    
+    @uris.setter
+    def uris(self, uris):
+        """ If the user tries to remove the last URI, disable as well. """
+        if len(uris) > 0:
+            self['URIs'] = ' '.join(uris)
+        else:
+            self['URIs'] = ''
+            self.enabled = False
+
+    @property
+    def suites(self):
+        """ [str]: The list of enabled Suites. """
+        try:
+            return self['Suites'].split()
+        except KeyError:
+            return None
+    
+    @suites.setter
+    def suites(self, suites):
+        """ If user removes the last suite, disable as well. """
+        if len(suites) > 0:
+            self['Suites'] = ' '.join(suites)
+        else:
+            self['Suites'] = ''
+            self.enabled = False
+    
+    @property
+    def components(self):
+        """[str]: The list of components enabled. """
+        try:
+            return self['Components'].split()
+        except KeyError:
+            return None
+    
+    @components.setter
+    def components(self, components):
+        """ Also disable if the user tries to remove the last component. """
+        if len(components) > 0:
+            self['Components'] = ' '.join(components)
+        else:
+            self['Components'] = ''
+            self.enabled = False
+    
+    @property
+    def options(self):
+        """ dict: Addtional options for the repository."""
+        non_options = [
+            'X-Repolib-Name', 'Enabled', 'Types', 'URIs', 'Suites', 'Components'
+        ]
+        options = {}
+        for key in self:
+            if key not in non_options:
+                options[key] = self[key]
+        if len(options) > 0:
+            return options
+        return None
+    
+    @options.setter
+    def options(self, options):
+        for key in options:
+            self[key] = options[key]

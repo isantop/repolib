@@ -35,19 +35,17 @@ from . import util
 
 class SourceTestCase(unittest.TestCase):
     def setUp(self):
-        self.source = source.Source(
-            name='Test Source',
-            enabled=False,
-            types=['deb', 'deb-src'],
-            uris=['http://example.com/ubuntu', 'http://example.com/mirror'],
-            suites=['suite', 'suite-updates'],
-            components=['main', 'contrib', 'nonfree'],
-            options={
-                'Architectures': ['amd64', 'armel'],
-                'Languages': ['en_US', 'en_CA']
-            },
-            filename='test.source'
-        )
+        self.source = source.Source(filename='test.source')
+        self.source.name = 'Test Source'
+        self.source.enabled=False
+        self.source.types=[util.AptSourceType.BINARY, util.AptSourceType.SOURCE]
+        self.source.uris=['http://example.com/ubuntu', 'http://example.com/mirror']
+        self.source.suites=['suite', 'suite-updates']
+        self.source.components=['main', 'contrib', 'nonfree']
+        self.source.options={
+            'Architectures': 'amd64 armel',
+            'Languages': 'en_US en_CA'
+        }
 
     def test_default_source_data(self):
         self.assertEqual(self.source.name, 'Test Source')
@@ -65,8 +63,8 @@ class SourceTestCase(unittest.TestCase):
             'main', 'contrib', 'nonfree'
         ])
         self.assertDictEqual(self.source.options, {
-            'Architectures': ['amd64', 'armel'],
-            'Languages': ['en_US', 'en_CA']
+            'Architectures': 'amd64 armel',
+            'Languages': 'en_US en_CA'
         })
         self.assertEqual(self.source.filename, 'test.source')
     
@@ -84,18 +82,9 @@ class SourceTestCase(unittest.TestCase):
         self.assertEqual(self.source.make_source_string(), source_string)
     
     def test_set_enabled(self):
-        self.source.set_enabled(True)
+        self.source.enabled = True
         self.assertTrue(self.source.enabled.get_bool())
     
     def test_set_source_enabled(self):
         self.source.set_source_enabled(False)
         self.assertEqual(self.source.types, [util.AptSourceType.BINARY])
-    
-    def test_get_options(self):
-        self.assertEqual(
-            self.source._get_options(),
-            'Architectures: amd64 armel\nLanguages: en_US en_CA\n'
-        )
-    
-    def test_get_types(self):
-        self.assertEqual(self.source._get_types(), ['deb', 'deb-src'])
