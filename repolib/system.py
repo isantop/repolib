@@ -63,20 +63,19 @@ class SystemSource(source.Source):
             component -- The component to (en|dis)able (default: "main")
             ennabled -- Whether COMPONENT is enabled (default: True)
         """
+        components = self.components.copy()
         if not enabled:
-            if component in self.components:
-                self.components.remove(component)
-                if len(self.components) > 0:
-                    self.save_to_disk()
-                else:
-                    self.set_enabled(False)
-                    self.save_to_disk()
+            if component in components:
+                components.remove(component)
+                self.components = components.copy()
+                self.save_to_disk()
                 return component
-        
         else:
-            self.set_enabled(True)
-            if component not in self.components:
-                self.components.append(component)
+            if component not in components:
+                self.enabled = True
+                components.append(component)
+                self.components = components.copy()
+                self.save_to_disk()
                 return component
 
         raise SystemSourceException(
@@ -91,21 +90,21 @@ class SystemSource(source.Source):
             suite -- The suite to (en|dis)able (default: main)
             ennabled -- Whether COMPONENT is enabled (default: True)
         """
+        suites = self.suites.copy()
         if not enabled:
-            if suite in self.suites:
-                self.suites.remove(suite)
-                if len(self.suites) > 0:
-                    self.save_to_disk()
-                else:
-                    self.set_enabled(False)
-                    self.save_to_disk()
+            if suite in suites:
+                suites.remove(suite)
+                self.suites = suites.copy()
+                self.save_to_disk()
                 return suite
-        
         else:
-            self.set_enabled(True)
-            if suite not in self.suites:
-                self.suites.append(suite)
+            if suite not in suites:
+                self.enabled = True
+                suites.append(suite)
+                self.suites = suites.copy()
+                self.save_to_disk()
                 return suite
+
 
         raise SystemSourceException(
             msg=f"Couldn't toggle suite: {suite} to {enabled}"

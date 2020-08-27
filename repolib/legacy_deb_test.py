@@ -53,7 +53,7 @@ class LegacyTestCase(unittest.TestCase):
         self.source.load_from_file()
 
     def test_load_from_file(self):
-        opts = {'Architectures': ['amd64']}
+        opts = {'Architectures': 'amd64'}
         self.assertEqual(self.source.filename, 'test.list')
         self.assertEqual(len(self.source.sources), 2)
         for debsource in self.source.sources:
@@ -93,8 +93,8 @@ class LegacyTestCase(unittest.TestCase):
         for source in self.source.sources:
             source.uris = ['http://example.com']
             source.options = {
-                'Architectures': ['armel', 'amd64'],
-                'Languages': ['en_US']
+                'Architectures': 'armel amd64',
+                'Languages': 'en_US'
             }
             source.components = ['main']
         self.source.filename = 'test3.list'

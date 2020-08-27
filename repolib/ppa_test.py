@@ -61,7 +61,7 @@ class PPATestCase(unittest.TestCase):
         self.assertEqual(self.source.types, [util.AptSourceType.BINARY])
     
     def test_options(self):
-        self.assertDictEqual(self.source.options, {})
+        self.assertIsNone(self.source.options)
 
     def test_internet_features(self):
         try:
