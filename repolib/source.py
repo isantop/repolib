@@ -66,7 +66,7 @@ class Source(deb822.Deb822):
             raise SourceError("No filename to load from")
 
         full_path = util.sources_dir / filename
-        
+
         with open(full_path, mode='r') as source_file:
             super().__init__(source_file)
 
@@ -78,27 +78,27 @@ class Source(deb822.Deb822):
 
         with open(full_path, mode='w') as sources_file:
             sources_file.write(self.dump())
-    
+
     def make_source_string(self):
-        """ Makes a printable string of the source. 
+        """ Makes a printable string of the source.
 
         This method is intended to provide output in a user-friendly format. For
         output representative of the actual data, use dump() instead.
-        
+
         Returns:
             A str which can be printed to console.
         """
         if not self.name:
             self.name = self.filename.replace('.sources', '')
-        
+
         toprint = self.dump()
         toprint = toprint.replace('X-Repolib-Name', 'Name')
         return toprint
-    
+
     def set_source_enabled(self, enabled):
         """ Convenience method to set a source with source_code enabled.
 
-        If source code is enabled, then the Types for self will be both 
+        If source code is enabled, then the Types for self will be both
         BINARY and SOURCE. Otherwise it will be just BINARY.
 
         Arguments:
@@ -117,11 +117,11 @@ class Source(deb822.Deb822):
             return self['X-Repolib-Name']
         except KeyError:
             return None
-    
+
     @name.setter
     def name(self, name):
         self['X-Repolib-Name'] = name
-    
+
     @property
     def enabled(self):
         """ util.AptSourceEnabled: Whether the source is enabled or not. """
@@ -129,7 +129,7 @@ class Source(deb822.Deb822):
             return util.AptSourceEnabled(self['enabled'])
         except KeyError:
             return None
-    
+
     @enabled.setter
     def enabled(self, enable):
         """ Accept a wide variety of data types/values for ease of use. """
@@ -148,7 +148,7 @@ class Source(deb822.Deb822):
             return types
         except KeyError:
             return None
-    
+
     @types.setter
     def types(self, types):
         print(types)
@@ -156,7 +156,7 @@ class Source(deb822.Deb822):
         for dtype in types:
             output_types.append(dtype.value)
         self['Types'] = ' '.join(output_types)
-    
+
 
     @property
     def uris(self):
@@ -165,7 +165,7 @@ class Source(deb822.Deb822):
             return self['URIs'].split()
         except KeyError:
             return None
-    
+
     @uris.setter
     def uris(self, uris):
         """ If the user tries to remove the last URI, disable as well. """
@@ -182,7 +182,7 @@ class Source(deb822.Deb822):
             return self['Suites'].split()
         except KeyError:
             return None
-    
+
     @suites.setter
     def suites(self, suites):
         """ If user removes the last suite, disable as well. """
@@ -191,7 +191,7 @@ class Source(deb822.Deb822):
         else:
             self['Suites'] = ''
             self.enabled = False
-    
+
     @property
     def components(self):
         """[str]: The list of components enabled. """
@@ -199,7 +199,7 @@ class Source(deb822.Deb822):
             return self['Components'].split()
         except KeyError:
             return None
-    
+
     @components.setter
     def components(self, components):
         """ Also disable if the user tries to remove the last component. """
@@ -208,7 +208,7 @@ class Source(deb822.Deb822):
         else:
             self['Components'] = ''
             self.enabled = False
-    
+
     @property
     def options(self):
         """ dict: Addtional options for the repository."""
@@ -222,7 +222,7 @@ class Source(deb822.Deb822):
         if len(options) > 0:
             return options
         return None
-    
+
     @options.setter
     def options(self, options):
         for key in options:

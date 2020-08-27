@@ -37,11 +37,11 @@ options_re = re.compile(r'[^@.+]\[([^[]+.+)\]\ ')
 uri_re = re.compile(r'\w+:(\/?\/?)[^\s]+')
 
 class DebLineSourceException(Exception):
-    
+
     def __init__(self, code=1):
         """Exception with a debline-format source
 
-        Arguments: 
+        Arguments:
             code (:obj:`int`, optional, default=1): Exception error code.
     """
         self.code = code
@@ -55,10 +55,10 @@ class DebLine(source.Source):
         'PDiffs': 'pdiffs',
         'By-Hash': 'by-hash'
     }
-    
+
     def __init__(self, line):
         super().__init__()
-        
+
         self.deb_line = line
         if 'cdrom:' in self.deb_line:
             raise util.RepoError(
@@ -68,12 +68,12 @@ class DebLine(source.Source):
         self._parse_debline(self.deb_line)
         self.filename = self._make_name(prefix="deb-")
         self.name = self.filename.replace('.sources', '')
-        
+
     def make_debline(self):
         """ Output a one-line entry for this source.
 
-        Note that this is expected to fail if somehow there is more than one 
-        type, URI, or suite, because this format does not support multiples of 
+        Note that this is expected to fail if somehow there is more than one
+        type, URI, or suite, because this format does not support multiples of
         these items.
         """
         line = ''
@@ -93,12 +93,12 @@ class DebLine(source.Source):
                 'The source has too many types. One-line format sources support '
                 'one type only.'
             )
-        
+
         if self.enabled == util.AptSourceEnabled.FALSE:
             line += '# '
-        
+
         line += f'{self.types[0].get_string()} '
-        
+
         if self.options:
             line += '['
             line += self._get_options()
@@ -107,10 +107,10 @@ class DebLine(source.Source):
 
         line += f'{self.uris[0]} '
         line += f'{self.suites[0]} '
-        
+
         for component in self.components:
             line += f'{component} '
-        
+
         return line.strip()
 
     def _make_name(self, prefix=''):
@@ -134,24 +134,19 @@ class DebLine(source.Source):
         for uri in uri_re.finditer(line):
             self.uris = [uri[0]]
             line_uri = line.replace(uri[0], '')
-        
-        print(line_uri)
-        
+
         # Options parsing
         ## TODO: FIx this
         try:
             options = options_re.search(line_uri).group()
             opts = self._set_options(options.strip())
-            print(opts)
             self.options = opts.copy()
             line_uri = line_uri.replace(options, '')
         except AttributeError:
             pass
-        
-        print(line_uri)
-        
+
         deb_list = line_uri.split()
-        
+
         # Type Parsing
         self.types = [util.AptSourceType.BINARY]
         if deb_list[0] == 'deb-src':
@@ -168,7 +163,7 @@ class DebLine(source.Source):
             else:
                 break
         self.components = comps
-    
+
     def _validate(self, valid):
         """
         Ensure we have a valid debian repository line.
@@ -181,7 +176,7 @@ class DebLine(source.Source):
             raise util.RepoError(
                 'The line %s does not appear to be a valid repo' % self.deb_line
             )
-    
+
     def _get_options(self):
         opt_str = ''
         for key in self.options:
@@ -193,7 +188,7 @@ class DebLine(source.Source):
         Set the type of repository (deb or deb-src)
         """
         self.types = [util.AptSourceType(deb_type)]
-    
+
     def _set_options(self, options):
         """
         Set the options.
@@ -204,15 +199,15 @@ class DebLine(source.Source):
         op[0] = " "
         op[-1] = " "
         options = "".join(op).strip()
-        
+
         for replacement in self.options_d:
                 options = options.replace(replacement, self.options_d[replacement])
-        
+
         options = options.replace('=', ',')
         options_list = options.split()
 
         options_output = {}
-        
+
         for i in options_list:
             option = i.split(',')
             values_list = []
@@ -220,4 +215,3 @@ class DebLine(source.Source):
                 values_list.append(value)
             options_output[option[0]] = ' '.join(values_list)
         return options_output
-            
