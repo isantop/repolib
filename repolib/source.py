@@ -25,14 +25,24 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+#pylint: disable=too-many-ancestors
+# If we want to use the subclass, we don't have a lot of options.
 
-import os
 from debian import deb822
 
 from . import util
 
 class SourceError(Exception):
-    pass
+    """ Exception from a source object."""
+
+    def __init__(self, *args, code=1, **kwargs):
+        """Exception with a source object
+
+        Arguments:
+            code (:obj:`int`, optional, default=1): Exception error code.
+    """
+        super().__init__(*args, **kwargs)
+        self.code = code
 
 class Source(deb822.Deb822):
     """ A Deb822 object representing a software source.
@@ -50,7 +60,7 @@ class Source(deb822.Deb822):
     }
 
 
-    def __init__(self, filename=None, *args, **kwargs):
+    def __init__(self, *args, filename=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.filename = filename
 
