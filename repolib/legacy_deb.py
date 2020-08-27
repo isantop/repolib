@@ -26,25 +26,18 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from pathlib import Path
-from re import compile
-
 from . import deb
-from . import source
 from . import util
-
-options_re = compile(r'[^@.+]\[([^[]+.+)\]\ ')
-uri_re = compile(r'\w+:(\/?\/?)[^\s]+')
 
 class LegacyDebSource():
     """Legacy deb sources
 
-    Because Legacy Deb format entries have limitations on how many URIs or 
-    suites they can contain, many legacy entry files use multiple sources to 
-    configure multiple URIs, suites, or types. A common example is to have a 
-    `deb` entry and an otherwise identical `deb-src` entry. To make this 
+    Because Legacy Deb format entries have limitations on how many URIs or
+    suites they can contain, many legacy entry files use multiple sources to
+    configure multiple URIs, suites, or types. A common example is to have a
+    `deb` entry and an otherwise identical `deb-src` entry. To make this
     simpler, we treat legacy sources as a "meta source" and store the individual
-    lines in a list. 
+    lines in a list.
 
     Keyword Arguments:
         name (str): The name of this source
@@ -66,24 +59,24 @@ class LegacyDebSource():
             self.filename = filename
         self.name = ''
         self.sources = []
-        
-        full_path = util.sources_dir / self.filename
+
+        full_path = util.get_sources_dir() / self.filename
 
         with open(full_path, 'r') as source_file:
             for line in source_file:
-                if self._validate(line):
+                if util.validate_debline(line):
                     deb_src = deb.DebLine(line)
                     self.sources.append(deb_src)
-    
+
     def save_to_disk(self):
         """ Save the source to the disk. """
-        full_path = util.sources_dir / self.filename
+        full_path = util.get_sources_dir() / self.filename
 
         source_output = self.make_deblines()
-        
+
         with open(full_path, 'w') as source_file:
             source_file.write(source_output)
-    
+
     def make_deblines(self):
         """ Create a string representation of the enties as they would be saved.
 
@@ -95,18 +88,5 @@ class LegacyDebSource():
         toprint = '## Added/managed by repolib ##\n'
         for source in self.sources:
             toprint += f'{source.make_debline()}\n'
-        
-        return toprint
 
-    def _validate(self, valid):
-        """ Ensure we have a valid debian repository line. """
-        valid = valid.strip()
-        if valid.startswith('#'):
-            valid = valid.replace('#', '')
-        
-        valid = valid.strip()
-        
-        if valid.startswith('deb'):
-            return True
-        
-        return False
+        return toprint

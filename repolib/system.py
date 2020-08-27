@@ -25,37 +25,39 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+#pylint: disable=too-many-ancestors
+# If we want to use the subclass, we don't have a lot of options.
+
 from . import source
-from . import util 
+from . import util
 
 class SystemSourceException(Exception):
-    
-    def __init__(self, msg=None, code=1):
+    """ System Source Exceptions. """
+
+    def __init__(self, *args, code=1, **kwargs):
         """Exception with the system sources
 
-        Arguments: 
-            msg (str): Human-readable message describing the error that threw the 
+        Arguments:
+            msg (str): Human-readable message describing the error that threw the
                 exception.
             code (:obj:`int`, optional, default=1): Exception error code.
     """
-        self.msg = msg
+        super().__init__(*args, **kwargs)
         self.code = code
 
 class SystemSource(source.Source):
+    """ System Sources. """
 
-    def __init__(self,
-                 name='System Sources', enabled=True, types=[],
-                 uris=[], suites=[], components=[], options={},
-                 filename='system.sources'):
+    def __init__(self, filename='system.sources'):
         """ Constructor for System Sources
 
-        Loads a source object for the System Sources. These are located (by 
+        Loads a source object for the System Sources. These are located (by
         default) in /etc/apt/sources.list.d/system.sources. If your distro uses
         a different location, please patch this in your packaging.
         """
         super().__init__()
         self.load_from_file(filename=filename)
-    
+
     def set_component_enabled(self, component='main', enabled=True):
         """ Enables or disabled a repo component (e.g. 'main')
 
@@ -109,4 +111,3 @@ class SystemSource(source.Source):
         raise SystemSourceException(
             msg=f"Couldn't toggle suite: {suite} to {enabled}"
         )
-    

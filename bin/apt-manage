@@ -67,7 +67,7 @@ def main(options=None):
     parser = argparse.ArgumentParser(
         prog='apt-manage',
         description='Manage software sources and repositories',
-        epilog='apt-manage version: {}'.format(repolib.version)
+        epilog='apt-manage version: {}'.format(repolib.VERSION)
     )
 
     parser.add_argument(

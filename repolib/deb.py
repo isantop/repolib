@@ -27,26 +27,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 This is a library for parsing deb lines into deb822-format data.
 """
+# pylint: disable=too-many-ancestors, too-many-instance-attributes
+# If we want to use the subclass, we don't have a lot of options.
 
 import re
 
 from . import source
 from . import util
 
-options_re = re.compile(r'[^@.+]\[([^[]+.+)\]\ ')
-uri_re = re.compile(r'\w+:(\/?\/?)[^\s]+')
-
 class DebLineSourceException(Exception):
+    """ Exceptions with DebLine Sources. """
 
-    def __init__(self, code=1):
-        """Exception with a debline-format source
+    def __init__(self, *args, code=1, **kwargs):
+        """Exception with a debline source object
 
         Arguments:
             code (:obj:`int`, optional, default=1): Exception error code.
     """
+        super().__init__(*args, **kwargs)
         self.code = code
 
 class DebLine(source.Source):
+    """ Sources input via a deb line. """
+    options_re = re.compile(r'[^@.+]\[([^[]+.+)\]\ ')
+    uri_re = re.compile(r'\w+:(\/?\/?)[^\s]+')
 
     outoptions_d = {
         'Architectures': 'arch',
@@ -97,7 +101,7 @@ class DebLine(source.Source):
         if self.enabled == util.AptSourceEnabled.FALSE:
             line += '# '
 
-        line += f'{self.types[0].get_string()} '
+        line += f'{self.types[0].value} '
 
         if self.options:
             line += '['
@@ -131,14 +135,13 @@ class DebLine(source.Source):
             line = line.strip()
 
         # URI parsing
-        for uri in uri_re.finditer(line):
+        for uri in self.uri_re.finditer(line):
             self.uris = [uri[0]]
             line_uri = line.replace(uri[0], '')
 
         # Options parsing
-        ## TODO: FIx this
         try:
-            options = options_re.search(line_uri).group()
+            options = self.options_re.search(line_uri).group()
             opts = self._set_options(options.strip())
             self.options = opts.copy()
             line_uri = line_uri.replace(options, '')
@@ -195,13 +198,13 @@ class DebLine(source.Source):
         """
         # Split the option string into a list of chars, so that we can replace
         # the first and last characters ([ and ]) with spaces.
-        op = list(options)
-        op[0] = " "
-        op[-1] = " "
-        options = "".join(op).strip()
+        ops = list(options)
+        ops[0] = " "
+        ops[-1] = " "
+        options = "".join(ops).strip()
 
         for replacement in self.options_d:
-                options = options.replace(replacement, self.options_d[replacement])
+            options = options.replace(replacement, self.options_d[replacement])
 
         options = options.replace('=', ',')
         options_list = options.split()

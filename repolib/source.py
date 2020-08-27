@@ -50,6 +50,8 @@ class Source(deb822.Deb822):
     Provides a dict-like interface for accessing and modifying DEB822-format
     sources, as well as options for loading and saving them from disk.
     """
+    # pylint: disable=too-many-instance-attributes
+    # We want to provide easy access to these data
 
     options_d = {
         'arch': 'Architectures',
@@ -75,7 +77,7 @@ class Source(deb822.Deb822):
         if not self.filename:
             raise SourceError("No filename to load from")
 
-        full_path = util.sources_dir / filename
+        full_path = util.get_sources_dir() / filename
 
         with open(full_path, mode='r') as source_file:
             super().__init__(source_file)
@@ -84,7 +86,7 @@ class Source(deb822.Deb822):
         """ Saves the source to disk."""
         if not self.filename:
             raise SourceError('No filename to save to specified')
-        full_path = util.sources_dir / self.filename
+        full_path = util.get_sources_dir() / self.filename
 
         with open(full_path, mode='w') as sources_file:
             sources_file.write(self.dump())
