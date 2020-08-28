@@ -85,12 +85,11 @@ class PPALine(source.Source):
             fetch_data (bool): Whether to fetch metadata from Launchpad.
         """
         self.init_values()
+        self.enabled = 'yes'
 
         raw_ppa = self.ppa_line.replace('ppa:', '').split('/')
         ppa_owner = raw_ppa[0]
         ppa_name = raw_ppa[1]
-
-        self.enabled = util.AptSourceEnabled.TRUE
 
         ppa_info = self.ppa_line.split(":")
         ppa_uri = 'http://ppa.launchpad.net/{}/ubuntu'.format(ppa_info[1])
@@ -106,13 +105,29 @@ class PPALine(source.Source):
             if self.verbose:
                 print(self.ppa_info)
             self.name = self.ppa_info['displayname']
+        self.enabled = util.AptSourceEnabled.TRUE
 
-    def save_to_disk(self):
+    def make_name(self):
+        """ Make a name suitable for a PPA.
+
+        Returns:
+            str: The name generated.
+        """
+        try:
+            ref = self.ppa_info['reference'].replace('/', '-')
+            name = f'{ref}-{self.suites[0]}.sources'
+        except (TypeError, AttributeError):
+            name = f'{self.ppa_line.split(":")[1]}'
+
+        return name.replace("~", "")
+
+    def save_to_disk(self, save=True):
         """
         Saves the PPA to disk, and fetches the signing key.
         """
         self._get_ppa_key()
-        super().save_to_disk()
+        if save:
+            super().save_to_disk()
 
     def copy(self, source_code=True):
         """ Copies the source and returns an identical source object.
@@ -189,4 +204,7 @@ def add_key(fingerprint):
     apt_key_cmd = "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys".split()
     # apt_key_cmd.append(ppa_info['signing_key_fingerprint'])
     apt_key_cmd.append(fingerprint)
-    subprocess.run(apt_key_cmd, check=False)
+    subprocess.run(
+        apt_key_cmd,
+        check=False
+    )

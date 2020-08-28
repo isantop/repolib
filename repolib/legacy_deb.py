@@ -79,6 +79,7 @@ class LegacyDebSource():
 
     def save_to_disk(self):
         """ Save the source to the disk. """
+        self.sources[0].save_to_disk(save=False)
         full_path = util.get_sources_dir() / self.filename
 
         source_output = self.make_deblines()
@@ -95,6 +96,7 @@ class LegacyDebSource():
             A str with the output entries.
         """
         toprint = '## Added/managed by repolib ##\n'
+        toprint += f'#\n## X-Repolib-Name: {self.sources[0].name}\n'
         for source in self.sources:
             toprint += f'{source.make_debline()}\n'
 
