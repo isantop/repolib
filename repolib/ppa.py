@@ -69,9 +69,10 @@ class PPALine(source.Source):
     # These just have more data than a normal source, and most of these are
     # @properties anyway (due to the inheritance from source.Source).
 
-    def __init__(self, line, fetch_data=True):
+    def __init__(self, line, fetch_data=True, verbose=False):
         super().__init__()
         self.ppa_line = line
+        self.verbose = verbose
         if not self.ppa_line.startswith('ppa:'):
             raise util.RepoError("The PPA %s is malformed!" % self.ppa_line)
 
@@ -83,6 +84,8 @@ class PPALine(source.Source):
         Arguments:
             fetch_data (bool): Whether to fetch metadata from Launchpad.
         """
+        self.init_values()
+
         raw_ppa = self.ppa_line.replace('ppa:', '').split('/')
         ppa_owner = raw_ppa[0]
         ppa_name = raw_ppa[1]
@@ -100,6 +103,8 @@ class PPALine(source.Source):
         self.filename = '{}.sources'.format(self.name)
         if fetch_data:
             self.ppa_info = get_info_from_lp(ppa_owner, ppa_name[1])
+            if self.verbose:
+                print(self.ppa_info)
             self.name = self.ppa_info['displayname']
 
     def save_to_disk(self):
@@ -108,6 +113,20 @@ class PPALine(source.Source):
         """
         self._get_ppa_key()
         super().save_to_disk()
+
+    def copy(self, source_code=True):
+        """ Copies the source and returns an identical source object.
+
+        Arguments:
+            source_code (bool): if True, output an identical source, except with
+                source code enabled.
+
+        Returns:
+            A Source() object identical to self.
+        """
+        new_source = PPALine(self.ppa_line)
+        new_source = self._copy(new_source, source_code=source_code)
+        return new_source
 
     def _get_ppa_key(self):
         if self.ppa_line:
