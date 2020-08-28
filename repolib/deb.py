@@ -30,8 +30,6 @@ This is a library for parsing deb lines into deb822-format data.
 # pylint: disable=too-many-ancestors, too-many-instance-attributes
 # If we want to use the subclass, we don't have a lot of options.
 
-import re
-
 from . import source
 from . import util
 
@@ -49,84 +47,37 @@ class DebLineSourceException(Exception):
 
 class DebLine(source.Source):
     """ Sources input via a deb line. """
-    options_re = re.compile(r'[^@.+]\[([^[]+.+)\]\ ')
-    uri_re = re.compile(r'\w+:(\/?\/?)[^\s]+')
-
-    outoptions_d = {
-        'Architectures': 'arch',
-        'Languages': 'lang',
-        'Targets': 'target',
-        'PDiffs': 'pdiffs',
-        'By-Hash': 'by-hash'
-    }
 
     def __init__(self, line):
         super().__init__()
 
         self.deb_line = line
         if 'cdrom:' in self.deb_line:
-            raise util.RepoError(
+            raise DebLineSourceException(
                 'RepoLib does not support \'cdrom:\' URIs via this DebLine Class. '
                 'Please use a Source() class to add these sources'
             )
         self._parse_debline(self.deb_line)
-        self.filename = self._make_name(prefix="deb-")
+        self.filename = self.make_name(prefix="deb-")
         self.name = self.filename.replace('.sources', '')
 
-    def make_debline(self):
-        """ Output a one-line entry for this source.
+    def copy(self, source_code=True):
+        """ Copies the source and returns an identical source object.
 
-        Note that this is expected to fail if somehow there is more than one
-        type, URI, or suite, because this format does not support multiples of
-        these items.
+        Arguments:
+            source_code (bool): if True, output an identical source, except with
+                source code enabled.
+
+        Returns:
+            A Source() object identical to self.
         """
-        line = ''
-
-        if len(self.uris) > 1:
-            raise DebLineSourceException(
-                'The source has too many URIs. One-line format sources support '
-                'one URI only.'
-            )
-        if len(self.suites) > 1:
-            raise DebLineSourceException(
-                'The source has too many suites. One-line format sources support '
-                'one suite only.'
-            )
-        if len(self.uris) > 1:
-            raise DebLineSourceException(
-                'The source has too many types. One-line format sources support '
-                'one type only.'
-            )
-
-        if self.enabled == util.AptSourceEnabled.FALSE:
-            line += '# '
-
-        line += f'{self.types[0].value} '
-
-        if self.options:
-            line += '['
-            line += self._get_options()
-            line = line.strip()
-            line += '] '
-
-        line += f'{self.uris[0]} '
-        line += f'{self.suites[0]} '
-
-        for component in self.components:
-            line += f'{component} '
-
-        return line.strip()
-
-    def _make_name(self, prefix=''):
-        uri = self.uris[0].replace('/', ' ')
-        uri_list = uri.split()
-        name = '{}{}.sources'.format(
-            prefix,
-            '-'.join(uri_list[1:]).translate(util.CLEAN_CHARS)
-        )
-        return name
+        new_source = DebLine(self.deb_line)
+        new_source = self._copy(new_source, source_code=source_code)
+        return new_source
 
     def _parse_debline(self, line):
+        self.init_values()
+
         # Enabled vs. Disabled
         self.enabled = True
         if line.startswith('#'):
@@ -179,12 +130,6 @@ class DebLine(source.Source):
             raise util.RepoError(
                 'The line %s does not appear to be a valid repo' % self.deb_line
             )
-
-    def _get_options(self):
-        opt_str = ''
-        for key in self.options:
-            opt_str += f'{self.outoptions_d[key]}={self.options[key].replace(" ", ",")} '
-        return opt_str
 
     def _set_type(self, deb_type):
         """
