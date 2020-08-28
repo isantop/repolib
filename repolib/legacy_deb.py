@@ -49,6 +49,14 @@ class LegacyDebSource():
         self.filename = filename
         self.sources = []
 
+    def make_names(self):
+        """ Creates a filename for this source, if one is not provided.
+
+        It also sets these values up.
+        """
+        self.filename = self.sources[0].make_name(prefix='deb-')
+        self.name = self.filename.replace('.sources', '')
+
     def load_from_file(self, filename=None):
         """ Loads the source from a file on disk.
 
