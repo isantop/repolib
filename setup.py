@@ -190,7 +190,7 @@ setup(
     long_description = long_description,
     tests_require = ['pytest'],
     license = 'BSD-2',
-    packages=['repolib'],
+    packages=['repolib', 'repolib/command'],
     cmdclass={'release': Release, 'test': Test},
     scripts=['bin/apt-manage'],
     data_files=[
