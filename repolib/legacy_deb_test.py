@@ -45,6 +45,8 @@ class LegacyTestCase(unittest.TestCase):
         with open(util.get_sources_dir(testing=True) / 'test2.list', mode='w') as test_file:
             test_file.write(
                 '## Added/managed by repolib ##\n'
+                '#\n'
+                '## X-Repolib-Name: deb-example-com\n'
                 'deb [arch=armel,amd64 lang=en_US] http://example.com ubuntu main\n'
                 'deb-src [arch=armel,amd64 lang=en_US] http://example.com ubuntu main\n'
             )
@@ -66,7 +68,7 @@ class LegacyTestCase(unittest.TestCase):
         # pylint: disable=line-too-long
         # unittest doesn't like when this is split to a sane length. We need to
         # have it on one ugly line so that the assertion is Equal.
-        expected = '## Added/managed by repolib ##\ndeb [arch=amd64] https://example.com ubuntu main universe\ndeb-src [arch=amd64] https://example.com ubuntu main universe\n'
+        expected = '## Added/managed by repolib ##\n#\n## X-Repolib-Name: deb-example-com\ndeb [arch=amd64] https://example.com ubuntu main universe\ndeb-src [arch=amd64] https://example.com ubuntu main universe\n'
         actual = self.source.make_deblines()
         self.assertEqual(actual, expected)
 

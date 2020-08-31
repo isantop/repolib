@@ -31,37 +31,102 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import argparse
 import logging
+import os
 import sys
 
 import repolib
 
 SOURCES_DIR = '/etc/apt/sources.list.d'
-"""
-def source(log, args):
-    source_enable = False
-    if args.source_enable:
-        source_enable = True
-    log.info(
-        'Setting source code for repository %s to %s' % (args.repository, source_enable)
-    )
 
-    try:
-        source = get_repository(args.repository)
-    except FileNotFoundError:
-        log.error('Repository %s not found, try `apt-manage list`' % args.repository)
-        exit(1)
+def add(log, args, parser):
+    """ Add subcommand. 
+    
+    The add command is used for adding new software sources to the system. It
+    requires root. 
 
-    source.set_source_enabled(source_enable)
-    log.debug(source.make_source_string())
+    Options:
+        --disable, -d
+        --source-code, -s
+        --expand, -e
+    """
 
-    try:
-        source.save_to_disk()
-    except PermissionError:
-        log.error('Unable to save changes, are you root?')
-        exit(1)
+    if os.geteuid() != 0:
+        parser.print_usage()
+        log.error('You need to root, or use sudo.')
+        sys.exit(1)
 
-    exit(0)
-"""
+    verbose = False
+    if args.debug > 1:
+        verbose = True
+    
+    expand = args.expand
+
+    debline = ' '.join(args.deb_line)
+    if args.deb_line == '822styledeb':
+        parser.print_usage()
+        log.error('A repository is required.')
+        sys.exit(1)
+    
+    if debline.startswith('http'):
+        debline = f'deb {debline}'
+
+    new_source = repolib.LegacyDebSource()
+    if debline.startswith('ppa:'):
+        add_source = repolib.PPALine(debline, verbose=verbose)
+    
+    elif debline.startswith('deb'):
+        expand = False
+        add_source = repolib.DebLine(debline)
+    
+    else:
+        log.critical(
+            'The line "%s" is malformed. Double-check the spelling.',
+            debline
+        )
+        sys.exit(1)
+    
+    new_source.sources.append(add_source)
+
+    if not debline.startswith('deb-src'):
+        src_source = add_source.copy()
+        src_source.enabled = False
+    else:
+        src_source = add_source
+    
+    if args.source_code:
+        src_source.enabled = True
+
+    if not debline.startswith('deb-src'):
+        new_source.sources.append(src_source)
+
+    new_source.sources[0].enabled = True
+    
+    if args.disable:
+        for repo in new_source.sources:
+            repo.enabled = False
+    
+    new_source.make_names()
+    
+    if args.debug > 0:
+        log.info('Debug mode set, not saving.')
+        for src in new_source.sources:
+            print(f'{src.dump()}\n')
+        log.info('Filename to save: %s', new_source.filename)
+        print(f'{new_source.make_deblines()}')
+        
+    
+    if expand:
+        print(new_source.sources[0].make_source_string())
+        print(f'{add_source.ppa_info["description"]}\n')
+        print('Press [ENTER] to contine or Ctrl + C to cancel.')
+        input()
+    
+    if args.debug == 0:
+        new_source.save_to_disk()
+    else:
+        sys.exit(2)
+        
+
 def get_argparser():
     """ Get an argument parser with our arguments.
 
@@ -329,19 +394,14 @@ def main(options=None):
 
     log.debug('Got command: %s', args.action)
 
-    # if os.geteuid() != 0:
-    #     parser.print_help()
-    #     log.error('You need to root, or use sudo.')
-    #     exit(176)
-
-    # action = {
+    action = {
     #     'source': source,
-    #     'add': add,
+        'add': add,
     #     'list': listall,
     #     'repo': repo,
     #     'convert': convert
-    # }
-    # action[args.action](log, args)
+    }
+    action[args.action](log, args, parser)
 
 if __name__ == '__main__':
     try:

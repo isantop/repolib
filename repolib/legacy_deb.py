@@ -49,6 +49,15 @@ class LegacyDebSource():
         self.filename = filename
         self.sources = []
 
+    def make_names(self):
+        """ Creates a filename for this source, if one is not provided.
+
+        It also sets these values up.
+        """
+        self.filename = self.sources[0].make_name()
+        self.filename = self.filename.replace('.sources', '.list')
+        self.name = self.filename.replace('.list', '')
+
     def load_from_file(self, filename=None):
         """ Loads the source from a file on disk.
 
@@ -70,6 +79,7 @@ class LegacyDebSource():
 
     def save_to_disk(self):
         """ Save the source to the disk. """
+        self.sources[0].save_to_disk(save=False)
         full_path = util.get_sources_dir() / self.filename
 
         source_output = self.make_deblines()
@@ -86,6 +96,7 @@ class LegacyDebSource():
             A str with the output entries.
         """
         toprint = '## Added/managed by repolib ##\n'
+        toprint += f'#\n## X-Repolib-Name: {self.sources[0].name}\n'
         for source in self.sources:
             toprint += f'{source.make_debline()}\n'
 

@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pylint: disable=too-many-ancestors
 # If we want to use the subclass, we don't have a lot of options.
 
+import re
+
 from debian import deb822
 
 from . import util
@@ -61,6 +63,15 @@ class Source(deb822.Deb822):
         'by-hash': 'By-Hash'
     }
 
+    outoptions_d = {
+        'Architectures': 'arch',
+        'Languages': 'lang',
+        'Targets': 'target',
+        'PDiffs': 'pdiffs',
+        'By-Hash': 'by-hash'
+    }
+    options_re = re.compile(r'[^@.+]\[([^[]+.+)\]\ ')
+    uri_re = re.compile(r'\w+:(\/?\/?)[^\s]+')
 
     def __init__(self, *args, filename=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -121,6 +132,88 @@ class Source(deb822.Deb822):
         else:
             self.types = [util.AptSourceType.BINARY]
 
+    # pylint: disable=arguments-differ
+    # We're fundamentally doing a different thing than our super class.
+    def copy(self, source_code=True):
+        """ Copies the source and returns an identical source object.
+
+        Arguments:
+            source_code (bool): if True, output an identical source, except with
+                source code enabled.
+
+        Returns:
+            A Source() object identical to self.
+        """
+        new_source = Source()
+        new_source = self._copy(new_source, source_code=source_code)
+        return new_source
+
+    def make_name(self, prefix=''):
+        """ Create a name for this source. """
+        uri = self.uris[0].replace('/', ' ')
+        uri_list = uri.split()
+        name = '{}{}.sources'.format(
+            prefix,
+            '-'.join(uri_list[1:]).translate(util.CLEAN_CHARS)
+        )
+        return name
+
+    def init_values(self):
+        """ Initialize the class-attributes in order.
+
+        This ensures that the values are in the correct order when output.
+        """
+        self.name = ''
+        self.enabled = True
+        self.types = [util.AptSourceType.BINARY]
+        self.uris = []
+        self.suites = []
+        self.components = []
+        self.options = {}
+
+    def make_debline(self):
+        """ Output a one-line entry for this source.
+
+        Note that this is expected to fail if somehow there is more than one
+        type, URI, or suite, because this format does not support multiples of
+        these items.
+        """
+        line = ''
+
+        if len(self.uris) > 1:
+            raise SourceError(
+                'The source has too many URIs. One-line format sources support '
+                'one URI only.'
+            )
+        if len(self.suites) > 1:
+            raise SourceError(
+                'The source has too many suites. One-line format sources support '
+                'one suite only.'
+            )
+        if len(self.uris) > 1:
+            raise SourceError(
+                'The source has too many types. One-line format sources support '
+                'one type only.'
+            )
+
+        if self.enabled == util.AptSourceEnabled.FALSE:
+            line += '# '
+
+        line += f'{self.types[0].value} '
+
+        if self.options:
+            line += '['
+            line += self._get_options()
+            line = line.strip()
+            line += '] '
+
+        line += f'{self.uris[0]} '
+        line += f'{self.suites[0]} '
+
+        for component in self.components:
+            line += f'{component} '
+
+        return line.strip()
 
     @property
     def name(self):
@@ -163,7 +256,6 @@ class Source(deb822.Deb822):
 
     @types.setter
     def types(self, types):
-        print(types)
         output_types = []
         for dtype in types:
             output_types.append(dtype.value)
@@ -239,3 +331,27 @@ class Source(deb822.Deb822):
     def options(self, options):
         for key in options:
             self[key] = options[key]
+
+    def _copy(self, new_source, source_code=False):
+        new_source.name = self.name
+        new_source.enabled = self.enabled
+        new_source.types = self.types.copy()
+
+        if source_code:
+            new_source.types = [util.AptSourceType.SOURCE]
+
+        new_source.uris = self.uris.copy()
+        new_source.suites = self.suites.copy()
+        new_source.components = self.components.copy()
+
+        try:
+            new_source.options = self.options.copy()
+        except AttributeError:
+            pass
+        return new_source
+
+    def _get_options(self):
+        opt_str = ''
+        for key in self.options:
+            opt_str += f'{self.outoptions_d[key]}={self.options[key].replace(" ", ",")} '
+        return opt_str
